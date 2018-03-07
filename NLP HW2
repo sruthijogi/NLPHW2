@@ -1,0 +1,94 @@
+#Implementation of Viterbi Algorithm for the Assignment
+
+
+import numpy as np
+from collections import defaultdict
+from nltk.corpus import brown
+from __future__ import (print_function, division)
+import json
+import math
+import operator
+import sys
+
+states = ('begin','Noun', 'Verb','Adv','end')
+
+observations = ('Learning', 'Changes', 'Throughly','end')
+
+start_probability = {'begin': 1,'Noun': 0.2, 'Verb': 0.3, 'Adv': 0, 'end': 1}
+
+transition_probability = {
+   'begin' : {'begin' : 1,'Noun': 0.2, 'Verb': 0.3, 'Adv':0,'end':0},
+   'Noun' : {'begin' : 0,'Noun': 0.1, 'Verb': 0.3,'Adv': 0.1, 'end': 0},
+   'Verb' : {'begin' : 0,'Verb': 0.1, 'Noun': 0.4, 'Adv': 0.4, 'end': 0},
+   'Adv' : {'begin' : 0,'Verb': 0, 'Noun': 0, 'Adv': 0,'end': 0.1},
+   'end' : {'begin' : 0,'Verb': 0, 'Noun': 0, 'Adv': 0,'end': 1}
+   }
+emission_probability = {
+    'begin':{'Learning': 0, 'Changes': 0, 'Throughly': 0,'end': 0},
+    'Noun' : {'Learning': 0.001, 'Changes': 0.003, 'Throughly': 0,'end': 0},
+    'Verb' : {'Learning': 0.003, 'Changes': 0.004, 'Throughly': 0,'end': 0},
+    'Adv' : {'Learning': 0,'Changes': 0,'Throughly': 0.002,'end': 0},
+     'end':{'Learning': 0, 'Changes': 0, 'Throughly': 0,'end': 1}
+   }
+
+# Helps visualize the steps of Viterbi.
+def print_table(M):
+    s = "    " + " ".join(("%15s" % observations[i]) for i in range(len(M))) + "\n"
+    for y in M[0]:
+        s += "%.15s: " % y
+        s += " ".join("%.15s" % ("%.15f" % m[y]) for m in M)
+        s += "\n"
+    print(s)
+ 
+def viterbi(obs, states, start_p, trans_p, emit_p):
+    M = [{}]
+    path = {}
+ 
+    # Initialize base cases (t == 0)
+    for y in states:
+        M[0][y] = start_p[y] * emit_p[y][obs[0]]
+        path[y] = [y]
+ 
+     
+    # Run Viterbi for t > 0
+    for t in range(1, len(obs)):
+        M.append({})
+        newpath = {}
+ 
+        for y in states:
+            (prob, state) = max((M[t-1][y0] * trans_p[y0][y] * emit_p[y][obs[t]], y0) for y0 in states)
+            M[t][y] = prob
+            newpath[y] = path[state] + [y]
+ 
+        # Don't need to remember the old paths
+        path = newpath
+ 
+    print_table(M)
+    (prob, state) = max((M[t][y], y) for y in states)
+    return (prob, path[state])
+
+def assignment():
+    return viterbi(observations,
+                   states,
+                   start_probability,
+                   transition_probability,
+                   emission_probability)
+print(assignment())
+
+
+Viterbi Matrix and Output of the tagger :
+
+           Learning         Changes       Throughly             end
+end: 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000288
+Noun: 0.0002000000000 0.0000010800000 0.0000000000000 0.0000000000000
+begin: 0.0000000000000 0.0000000000000 0.0000000000000 0.0000000000000
+Adv: 0.0000000000000 0.0000000000000 0.0000000002880 0.0000000000000
+Verb: 0.0009000000000 0.0000003600000 0.0000000000000 0.0000000000000
+
+(2.8800000000000007e-11, ['Verb', 'Verb', 'Adv', 'end'])
+
+
+
+
+
+
